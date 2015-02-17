@@ -38,31 +38,6 @@ gulp.task('copyFonts', function() {
     .pipe(gulp.dest('./public/fonts/'));
 });
 
-// Libraries
-// gulp.task('libs', function() {
-//   return gulp.src([
-//       './public/js/libs/jquery.js',
-//       './public/js/libs/bootstrap.js',
-//       './public/js/libs/react.js',
-//       './public/js/libs/JSXTransformer.js'
-//     ])
-//     .pipe(concat('./libs.js'))
-//     .pipe(gulp.dest('./public/js/'));
-// });
-
-// Styles
-// gulp.task('styles', function() {
-//   return gulp.src('./public/css/*.css')
-//     .pipe(concatCSS('main.css'))
-//     .pipe(gulp.dest('./public/css/'));
-// });
-
-// Fonts
-// gulp.task('fonts', function() {
-//   return gulp.src('./public/fonts/*')
-//     .pipe(gulp.dest('./build/fonts/'));
-// });
-
 // Bowercopy
 gulp.task('bowercopy', ['copyJS', 'copyCSS', 'copyFonts']);
 

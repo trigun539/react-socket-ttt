@@ -1,5 +1,9 @@
 'use strict';
 
+/**
+ * Multiplayer Tic-Tac-Toe game using react and socketio libraries.
+ */
+
 var express    = require('express'),
 app            = express(),
 server         = require('http').Server(app),
@@ -72,10 +76,6 @@ io.on('connection', function (socket){
   // Join Game Room
   socket.on('join room', function(room){
     console.log(socket.playerName + ' joining ' + room);
-    
-    console.log('--------------------------------');
-    console.log(playersWaiting);
-    console.log('--------------------------------');
 
     var game = {
       turn : 'X',
