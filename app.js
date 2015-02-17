@@ -1,39 +1,87 @@
 'use strict';
 
-var app        = require('express')(),
+var express    = require('express'),
+app            = express(),
 server         = require('http').Server(app),
 io             = require('socket.io')(server),
 bodyParser     = require('body-parser'),
 methodOverride = require('method-override'),
-browserify     = require('browserify'),
-literalify     = require('literalify'),
-React          = require('react'),
-MyApp          = React.createFactory(require('./myApp')),
+_              = require('underscore'),
 games          = [],
-players        = [];
+players        = [],
+numPlayers     = 0,
+gamesCount     = 0,
+playersWaiting = [];
 
 /**
  * CONFIGURING EXPRESS
  */
 
-app.use( bodyParser.urlencoded( { extended: true, limit: '50mb' } ) );
-app.use( bodyParser.json( { limit: '50mb' } ) );
-app.use( methodOverride() );
-
-server.listen(3003, function(){
-  console.log('Server started at http://localhost:3003');
-});
+app.use(express.static(__dirname + '/public'));
+app.set('view engine', 'ejs');
+app.set('views', __dirname + '/views');
+app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }));
+app.use(bodyParser.json({ limit: '50mb' }));
+app.use(methodOverride());
 
 /**
  * ROUTES
  */
 
 app.get('/', function(req, res, next){
-  var props = {
-    turn : "X",
-    score : { X: 0, O: 0 },
-    moves : 0,
-    tiles: {
+  res.render('index.ejs');
+});
+
+io.on('connection', function (socket){
+  var addedPlayer = false,
+  room            = null;
+
+  // New player
+  socket.on('add player', function (playerName) {
+    console.log(playerName + ' added to players list');
+    socket.playerName = playerName;
+
+    // Add the client's player name to the global list
+    players.push({
+      playerName: playerName,
+      socketID: socket.id
+    });
+
+    ++numPlayers;
+
+    if(playersWaiting.length > 0){
+      // Not available anymore!
+      socket.leave('available');
+      playersWaiting = _.without(playersWaiting, socket.id);
+
+      // Joining game room
+      room = 'game-' + gamesCount;
+
+      socket.emit('join game', room);
+
+      var opponent = io.sockets.connected[playersWaiting.splice(0,1)];
+      opponent.emit('join game', room);
+    }else{
+      socket.room = 'available';
+      socket.join('available');
+      playersWaiting.push(socket.id);
+      console.log(socket.playerName + ' joined the available room');
+    }
+  });
+  
+  // Join Game Room
+  socket.on('join room', function(room){
+    console.log(socket.playerName + ' joining ' + room);
+    
+    console.log('--------------------------------');
+    console.log(playersWaiting);
+    console.log('--------------------------------');
+
+    var game = {
+      turn : 'X',
+      score : { X: 0, O: 0 },
+      moves : 0,
+      tiles : {
       1: '',
       2: '',
       4: '',
@@ -43,83 +91,126 @@ app.get('/', function(req, res, next){
       64: '',
       128: '',
       256: ''
-    },
-    wins : [7, 56, 448, 73, 146, 292, 273, 84]
-  };
+      },
+      wins : [7, 56, 448, 73, 146, 292, 273, 84],
+      players : [],
+      id: room
+    };
 
-  // Now that we've got our data, we can perform the server-side rendering by
-  // passing it in as `props` to our React component - and returning an HTML
-  // string to be sent to the browser
-  var myAppHtml = React.renderToString(MyApp(props));
+    // Leaving room if in one.
+    if('room' in socket){
+      // If leaving from available room, remove player from available list
+      if(socket.room === 'available'){
+        playersWaiting = _.without(playersWaiting, socket.id);
+      }
+      socket.leave(socket.room);
+    }
 
-  res.setHeader('Content-Type', 'text/html');
+    if(room === 'available'){
+      // find if there is a player available and join him by creating a game
+      if(playersWaiting.length > 0){
+        // Joining game room
+        room = 'game-' + gamesCount;
+        socket.join(room);
+        socket.room = room;
+        game.players.push(socket.playerName);
+        socket.emit('joined room', game);
+        game.id = room;
+        games.push(game);
+        ++gamesCount; 
 
-  // Now send our page content - this could obviously be constructed in
-  // another template engine, or even as a top-level React component itself -
-  // but easier here just to construct on the fly
-  res.end(
-    // <html>, <head> and <body> are for wusses
+        var opponent = io.sockets.connected[playersWaiting.splice(0,1)];
+        opponent.emit('join game', room);
+      }else{
+        playersWaiting.push(socket.id);
+        socket.join(room);
+        socket.room = room;
+      }
+    }else{
+      var gameFound = false;
 
-    // Include our static React-rendered HTML in our content div. This is
-    // the same div we render the component to on the client side, and by
-    // using the same initial data, we can ensure that the contents are the
-    // same (React is smart enough to ensure no rendering will actually occur
-    // on page load)
-    '<script src="/socket.io/socket.io.js"></script>'+
-    '<script>'+
-      'var socket = io.connect(\'http://localhost:3003\');'+
-      'socket.on(\'news\', function (data) {'+
-        'console.log(data);'+
-        'socket.emit(\'my other event\', { my: \'data\' });'+
-      '});'+
-    '</script>'+
-    '<div id=content>' + myAppHtml + '</div>' +
+      // If game exists, join that game.
+      for(var i = 0; i < games.length; i++){
+        if(games[i].id === room){
+          game = games[i];
+          gameFound = true;
+          break;
+        }
+      }
 
-    // We'll load React from a CDN - you don't have to do this,
-    // you can bundle it up or serve it locally if you like
-    '<script src=//fb.me/react-0.12.2.js></script>' +
-
-    // Then the browser will fetch the browserified bundle, which we serve
-    // from the endpoint further down. This exposes our component so it can be
-    // referenced from the next script block
-    '<script src=/bundle.js></script>' +
-
-    // This script renders the component in the browser, referencing it
-    // from the browserified bundle, using the same props we used to render
-    // server-side. We could have used a window-level variable, or even a
-    // JSON-typed script tag, but this option is safe from namespacing and
-    // injection issues, and doesn't require parsing
-    '<script>' +
-      'var MyApp = React.createFactory(require("myApp"));' +
-      'React.render(MyApp(' + JSON.stringify(props) + '), document.getElementById("content"))' +
-    '</script>'
-  );
-});
-
-app.get('/bundle.js', function(req, res, next){
-  res.setHeader('Content-Type', 'text/javascript')
-
-  // Here we invoke browserify to package up our component.
-  // DON'T do it on the fly like this in production - it's very costly -
-  // either compile the bundle ahead of time, or use some smarter middleware
-  // (eg browserify-middleware).
-  // We also use literalify to transform our `require` statements for React
-  // so that it uses the global variable (from the CDN JS file) instead of
-  // bundling it up with everything else
-  browserify()
-    .require('./myApp.js', {expose: 'myApp'})
-    .transform({global: true}, literalify.configure({react: 'window.React'}))
-    .bundle()
-    .pipe(res)
-});
-
-io.on('connection', function (socket){
-  console.log('************* CONNECTED ***************');
-  console.log(socket.id);
-  console.log('***************************************');
-
-  socket.emit('news', { hello: 'world' });
-  socket.on('my other event', function (data) {
-    console.log(data);
+      // Add playerName
+      game.players.push(socket.playerName);
+      socket.join(room);
+      socket.room = room;
+      
+      if(gameFound){
+        socket.emit('joined room', game);
+        io.to(socket.room).emit('joined room', game);
+      }else{
+        game.id = 'game-' + gamesCount;
+        socket.emit('joined room', game);
+        io.to(socket.room).emit('joined room', game);
+        games.push(game);
+        ++gamesCount;
+      }
+    }
   });
+
+  // Player move
+  socket.on('move', function(state){
+    io.to(socket.room).emit('move', state);
+  });
+
+  // Leave room
+  socket.on('leave room', function(){
+    socket.leave(socket.room);
+  });
+
+  // End Game
+  socket.on('end game', function(result){
+    console.log('Game ended: ' + result);
+    io.sockets.in(socket.room).emit('end game', result);
+    socket.leave(socket.room);
+  });
+
+  // when the user disconnects.. perform this
+  socket.on('disconnect', function () {
+    console.log('*********** Player Left ****************');
+    console.log(socket.id + ' | ' + socket.playerName);
+    console.log('****************************************');
+
+    // Remove player from available list
+    playersWaiting = _.without(playersWaiting, socket.id);
+
+    // If player has joined a room.
+    if('room' in socket){
+      // if available room
+      if(socket.room !== 'available'){
+        // Remove game from games list
+        for(var i = 0; i < games.length; i++){
+          if(socket.room === games[i].id){
+            games.splice(i,1);
+            break;
+          }
+        }
+        // Tell opponent you left
+        io.to(socket.room).emit('player left');
+      }
+    }
+
+    // Remove player from global players list
+    for(var i = 0; i < players.length; i++){
+      if(players[i].playerName === socket.playerName){
+        players.splice(i,1);
+        --numPlayers;
+        break;
+      }
+    }
+  });
+});
+
+
+// Starting server
+server.listen(3003, function(){
+  console.log('Server started at http://localhost:3003');
 });

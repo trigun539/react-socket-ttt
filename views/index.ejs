@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="icon" href="/img/favicon.png">
+
+    <title>MultiPlayer TTT</title>
+
+    <!-- STYLES -->
+    <link rel="stylesheet" href="/css/bootstrap.css">
+    <link rel="stylesheet" href="/css/font-awesome.css">
+    <link rel="stylesheet" href="/css/main.css">
+  </head>
+
+  <body>
+
+    <div class="container" style="text-align: center;">
+      
+      <!-- ENTER PAGE -->
+      <div id="enter-page" class="row page">
+        <div class="col-md-12">
+          <h2>Multiplayer Tic-Tac-Toe</h2>
+          <hr>
+          <div class="form-group">
+            <input id="playerNameInput" type="text" class="form-control" placeholder="Enter player name">
+          </div>
+          <div class="control-group" style="margin-top: 20px;">
+            <div class="controls">
+              <button id="playBtn" class="btn btn-success">Play!</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- WAITING FOR OPPONENT PAGE -->
+      <div id="waiting-page" class="row page">
+        <div class="col-md-12">
+          <h2>Waiting for opponent</h2>
+          <hr>
+          <i class="fa fa-refresh fa-spin fa-5x"></i>
+        </div>
+      </div>
+
+      <!-- GAME PAGE -->
+      <div id="game-page" class="row page">
+        <div class="col-md-12">
+          <h2>Tic-Tac-Toe</h2>
+          <hr>
+          <div id="game">
+            <!-- TTT game here -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Result END -->
+      <div id="result-page" class="row page">
+        <div class="col-md-12">
+          <h2>Tic-Tac-Toe</h2>
+          <hr>
+          <div class="well">
+            <h3 id="resultText"></h3>
+            <button id="playAgainBtn" class="btn btn-success">Play again!</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- SCRIPTS -->
+    <script src="/js/libs/jquery.js"></script>
+    <script src="/js/libs/bootstrap.js"></script>
+    <script src="/js/libs/react.js"></script>
+    <script src="/js/libs/JSXTransformer.js"></script>
+    <script src="/js/main.js"></script>
+    <script type="text/jsx" src="/js/ttt.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      var socket = io.connect('http://172.28.16.26:3003');
+    </script>
+  </body>
+</html>

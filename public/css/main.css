@@ -1,0 +1,11 @@
+.active {
+  font-weight: bold;
+}
+
+#x-player {
+  float: left;
+}
+
+#o-player {
+  float: right;
+}

@@ -1,15 +1,25 @@
-var React = require('react'),
-DOM       = React.DOM,
-div       = DOM.div, 
-button    = DOM.button, 
-table     = DOM.table,
-tr        = DOM.tr,
-td        = DOM.td;
+'use strict';
 
-// This is just a simple example of a component that can be rendered on both
-// the server and browser
+var React    = require('react'),
+Router       = require('react-router'),
+DefaultRoute = Router.DefaultRoute,
+Link         = Router.Link,
+Route        = Router.Route,
+RouteHandler = Router.RouteHandler,
+DOM          = React.DOM,
+div          = DOM.div, 
+button       = DOM.button, 
+table        = DOM.table,
+tr           = DOM.tr,
+td           = DOM.td;
 
-module.exports = React.createClass({
+var App = React.createClass({
+  render: function () {
+    return div({}, RouteHandler);
+  }
+});
+
+var ttt = React.createClass({
 
   // We initialise its state by using the `props` that were passed in when it
   // was first rendered. We also want the button to be disabled until the
@@ -123,3 +133,8 @@ module.exports = React.createClass({
     return div({className: 'ttt-container'}, divChildren);
   },
 });
+
+
+// This is just a simple example of a component that can be rendered on both
+// the server and browser
+module.exports = App;
