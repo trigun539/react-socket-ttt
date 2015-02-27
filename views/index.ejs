@@ -60,7 +60,7 @@
       <div id="result-page" class="row page">
         <div class="col-md-12">
           <h2>Tic-Tac-Toe</h2>
-          <hr>
+          <hr>  
           <div class="well">
             <h3 id="resultText"></h3>
             <button id="playAgainBtn" class="btn btn-success">Play again!</button>
@@ -79,7 +79,8 @@
     <script type="text/jsx" src="/js/ttt.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script>
-      var socket = io.connect('http://localhost:3003');
+      // var socket = io.connect('http://localhost:3003');
+      var socket = io.connect('http://172.28.16.14:3003');
     </script>
   </body>
 </html>

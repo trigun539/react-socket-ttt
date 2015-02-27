@@ -117,10 +117,12 @@ var App = React.createClass({
         if(this.props.turn === 'X'){
           if(this.props.players[0] === playerName){
             options['onClick'] = this.set.bind(this, indicator);
+            options['onTouchStart'] = this.set.bind(this, indicator);
           }
         }else{
           if(this.props.players[1] === playerName){
             options['onClick'] = this.set.bind(this, indicator);
+            options['onTouchStart'] = this.set.bind(this, indicator);
           }
         }
 
